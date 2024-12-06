@@ -1,0 +1,37 @@
+import os
+import pandas as pd
+from sklearn.ensemble import IsolationForest
+
+# Input and output paths
+input_path = "/Users/user/Documents/εργοθεραπεία_project/anomaly_detection/archive/hyperaktiv_with_controls/hyperaktiv_with_controls/activity_data"
+output_path = "/Users/user/Documents/εργοθεραπεία_project/anomaly_detection/archive/anomaly_detection_activity"
+
+# Ensure output path exists
+os.makedirs(output_path, exist_ok=True)
+
+# Loop through all files in the input path
+for file_name in os.listdir(input_path):
+    if file_name.endswith(".csv"):  # Process only CSV files
+        file_path = os.path.join(input_path, file_name)
+
+        # Read the CSV file
+        data = pd.read_csv(file_path, delimiter=";")
+
+        # Ensure the file has the required columns
+        if "TIMESTAMP" in data.columns and "ACTIVITY" in data.columns:
+            # Prepare the data for anomaly detection
+            activity_data = data["ACTIVITY"].values.reshape(-1, 1)
+
+            # Fit Isolation Forest
+            model = IsolationForest(contamination=0.05, random_state=42)
+            data['ANOMALY'] = model.fit_predict(activity_data)
+
+            # Map anomalies to 1 (anomaly) and 0 (normal)
+            data['ANOMALY'] = data['ANOMALY'].map({1: 0, -1: 1})
+
+            # Save the result to the output directory
+            output_file_path = os.path.join(output_path, f"anomaly_{file_name}")
+            data.to_csv(output_file_path, index=False, sep=";")
+
+# Indicate completion
+"Anomaly detection completed and saved for all files."
